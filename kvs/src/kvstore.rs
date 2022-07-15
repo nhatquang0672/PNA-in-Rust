@@ -11,15 +11,14 @@ use std::collections::HashMap;
 /// assert_eq!(Some(String::from("value")), store.get(String::from("key")));
 ///
 pub struct KvStore {
-    data: HashMap<String, String>
+    data: HashMap<String, String>,
 }
 
 impl KvStore {
-
     /// Create new KvStore instance.
     pub fn new() -> KvStore {
-        KvStore{
-            data: HashMap::new()
+        KvStore {
+            data: HashMap::new(),
         }
     }
 

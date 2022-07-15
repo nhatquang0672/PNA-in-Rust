@@ -20,21 +20,24 @@ enum Commands {
     #[clap(about = "Get the string value of a given string key")]
     Get {
         #[clap(help = "The key string")]
-        key: Option<String>
+        key: Option<String>,
     },
 
     #[clap(about = "Remove a given key")]
     Rm {
         #[clap(help = "The key string")]
-        key: Option<String>
-    }
+        key: Option<String>,
+    },
 }
 
 fn main() -> Result<(), String> {
     let args = Args::parse();
     match args.command {
-        Commands::Set{key: _key, val: _val} => Err("unimplemented".to_owned()),
-        Commands::Get{key: _key} => Err("unimplemented".to_owned()),
-        Commands::Rm{key: _key} => Err("unimplemented".to_owned()),
+        Commands::Set {
+            key: _key,
+            val: _val,
+        } => Err("unimplemented".to_owned()),
+        Commands::Get { key: _key } => Err("unimplemented".to_owned()),
+        Commands::Rm { key: _key } => Err("unimplemented".to_owned()),
     }
 }
