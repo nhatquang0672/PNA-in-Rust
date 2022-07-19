@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-
+use std::fs::File;
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
@@ -32,6 +32,7 @@ enum Commands {
 
 fn main() -> Result<(), String> {
     let args = Args::parse();
+        
     match args.command {
         Commands::Set {
             key: _key,
