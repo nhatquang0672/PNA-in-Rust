@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-
+use std::{collections::HashMap, path::PathBuf};
 /// Data Structure handling the storage and retrieval
 /// of key-value data
 ///
@@ -18,9 +17,17 @@ impl KvStore {
     /// Create the new instance KvStore
     pub fn new() -> KvStore {
         KvStore {
-            data: HashMap::new()
+            data: HashMap::new(),
         }
     }
+
+    /// Open the KvStore at a given path. Return the KvStore.
+    pub fn open(path: impl Into<PathBuf>) -> Result<KvStore, ()> {
+        Ok(KvStore{
+            data: HashMap::new(),
+        })
+    }
+
     /// Set the value of a string key to a string
     pub fn set(&mut self, key: String, value: String) {
         self.data.insert(key, value);
@@ -36,4 +43,10 @@ impl KvStore {
         self.data.remove(&key);
     }
     
+}
+
+impl Default for KvStore {
+    fn default() -> Self {
+        Self::new()
+    }
 }
