@@ -3,11 +3,11 @@ use clap::{Parser, Subcommand};
 #[clap(author, version, about, long_about = None)]
 struct Args{
     #[clap(subcommand)]
-    commands: Commands,
+    commands: Command,
 }
 
 #[derive(Subcommand)]
-enum Commands {
+pub enum Command {
     /// Set the value of a string key to a string. Print an error and return a non-zero exit code on failure.
     Set {
         /// The string key
@@ -31,8 +31,8 @@ enum Commands {
 fn main() -> Result<(), String> {
     let args = Args::parse();
     match args.commands {
-        Commands::Get { key: _key } => Err("unimplemented".to_owned()),
-        Commands::Set { key: _key, value: _value } => Err("unimplemented".to_owned()),
-        Commands::Rm { key: _key } => Err("unimplemented".to_owned()),
+        Command::Get { key: _key } => Err("unimplemented".to_owned()),
+        Command::Set { key: _key, value: _value } => Err("unimplemented".to_owned()),
+        Command::Rm { key: _key } => Err("unimplemented".to_owned()),
     }
 }
