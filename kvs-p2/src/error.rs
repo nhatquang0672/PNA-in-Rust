@@ -14,12 +14,32 @@ pub enum KVSError {
     /// IO Error
     #[fail(display = "IO Error")]
     IOError(io::Error),
+    /// Key Not Found
+    #[fail(display = "Key Not Found")]
+    KeyNotFound,
+    /// Serialize/Deserialize Error
+    #[fail(display = "Serde Error")]
+    SerdeError(serde_json::Error),
+    /// Walkdir Error
+    #[fail(display = "Walkdir Error")]
+    WalkDirError(walkdir::Error),
 }
 
 
 impl From<io::Error> for KVSError {
     fn from(error: io::Error) -> Self {
         KVSError::IOError(error)
+    }
+}
+
+impl From<serde_json::Error> for KVSError {
+    fn from(error: serde_json::Error) -> Self {
+        KVSError::SerdeError(error)
+    }
+}
+impl From<walkdir::Error> for KVSError {
+    fn from(error: walkdir::Error) -> Self {
+        KVSError::WalkDirError(error)
     }
 }
 

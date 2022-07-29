@@ -1,5 +1,7 @@
-use std::{collections::HashMap, path::PathBuf};
+use core::num::dec2flt::parse;
+use std::{collections::{BTreeMap, HashMap}, path::PathBuf, io::{BufReader, BufWriter}, fs::File};
 use serde::{Serialize, Deserialize};
+use walkdir::WalkDir;
 use crate::error::{KVSError, Result};
 
 
@@ -13,7 +15,7 @@ impl Command {
         Command::Set {key, value}
     }
     fn remove(key: String) -> Command {
-        Command::Remove { key }
+        Command::Remove {key}
     }
 }
 
@@ -28,29 +30,40 @@ impl Command {
 /// assert_eq!(Some(String::from("value")), store.get(String::from("key")));
 ///
 pub struct KvStore {
-    cur_path: PathBuf,
+    path: PathBuf,
+    current_gen: u64,
+    readers: HashMap<u64, BufReader<File>>,
+    writer: BufWriter<File>,
+    // index: BTreeMap<String, String>,
 }
 
-
 impl KvStore {
-
-    // /// Create the new instance KvStore
-    // pub fn new() -> KvStore {
-    //     KvStore {
-    //         data: HashMap::new(),
-    //     }
-    // }
 
     /// Open the KvStore at a given path. Return the KvStore.
     pub fn open(path: impl Into<PathBuf>) -> Result<KvStore> {
         let path = path.into();
+        let cur_dir = WalkDir::new(path).sort_by_file_name();
+        let readers: HashMap<u64, BufReader<File>>= HashMap::new();
+        let writer : BufWriter<File>;
+        let lastiter = cur_dir.into_iter().last().
+        
+        for iter in cur_dir.into_iter() {
+            
+        }
         Ok(KvStore{
-            cur_path: path,
+            path,
+            current_gen: 0,
+            readers,
+            writer,
         })
     }
 
     /// Set the value of a string key to a string
     pub fn set(&mut self, key: String, value: String) -> Result<()> {
+        let cmd: Command = Command::Set { key, value };
+        let cmd_str = serde_json::to_string(&cmd)?;
+        serde_json::to_writer(self.writer, &cmd_str);
+        self.writer.
         panic!("unimplemented")
     }
 
