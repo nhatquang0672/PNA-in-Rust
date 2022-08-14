@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use kvs::{Result, KVSError};
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Args{
@@ -28,11 +29,11 @@ pub enum Command {
 
 }
 
-fn main() -> Result<(), String> {
+fn main() -> Result<()> {
     let args = Args::parse();
     match args.commands {
-        Command::Get { key: _key } => Err("unimplemented".to_owned()),
-        Command::Set { key: _key, value: _value } => Err("unimplemented".to_owned()),
-        Command::Rm { key: _key } => Err("unimplemented".to_owned()),
+        Command::Get { key: _key } => {Err(KVSError::Unimplemented)},
+        Command::Set { key: _key, value: _value } => Err(KVSError::Unimplemented),
+        Command::Rm { key: _key } => Err(KVSError::Unimplemented),
     }
 }

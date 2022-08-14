@@ -9,7 +9,7 @@ use std::io;
 /// Error
 pub enum KVSError {
     /// Invalid Command
-    #[fail(display = "invalid command")]
+    #[fail(display = "Invalid command")]
     InvalidCommand,
     /// IO Error
     #[fail(display = "IO Error")]
@@ -20,8 +20,11 @@ pub enum KVSError {
     /// Serialize/Deserialize Error
     #[fail(display = "Serde Error")]
     SerdeError(serde_json::Error),
-}
 
+    /// Umimplemented 
+    #[fail(display = "Unimmplemented")]
+    Unimplemented,
+}
 
 impl From<io::Error> for KVSError {
     fn from(error: io::Error) -> Self {
@@ -32,11 +35,6 @@ impl From<io::Error> for KVSError {
 impl From<serde_json::Error> for KVSError {
     fn from(error: serde_json::Error) -> Self {
         KVSError::SerdeError(error)
-    }
-}
-impl From<walkdir::Error> for KVSError {
-    fn from(error: walkdir::Error) -> Self {
-        KVSError::WalkDirError(error)
     }
 }
 
