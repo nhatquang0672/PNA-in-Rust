@@ -20,9 +20,6 @@ pub enum KVSError {
     /// Serialize/Deserialize Error
     #[fail(display = "Serde Error")]
     SerdeError(serde_json::Error),
-    /// Walkdir Error
-    #[fail(display = "Walkdir Error")]
-    WalkDirError(walkdir::Error),
 }
 
 
