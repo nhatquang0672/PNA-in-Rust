@@ -6,8 +6,8 @@ use crate::error::{KVSError, Result};
 
 #[derive(Serialize, Deserialize, Debug)]
 enum Command {
-    Set {key: String, value: String },
-    Remove { key: String },
+    Set {key: String, value: String},
+    Remove {key: String},
 }
 impl Command {
     fn set(key: String, value: String) -> Command {
@@ -29,26 +29,17 @@ impl Command {
 /// assert_eq!(Some(String::from("value")), store.get(String::from("key")));
 ///
 pub struct KvStore {
-    cur_path: PathBuf,
-    cur_gen: u64,
-    readers: HashMap<u64, BufReader<File>>,
-    writer: BufWriter<File>,
-    // index: BTreeMap<String, >
 }
 
 impl KvStore {
 
     /// Open the KvStore at a given path. Return the KvStore.
     pub fn open(path: impl Into<PathBuf>) -> Result<KvStore> {
-        let cur_path = path.into();
-
         panic!("unimplemented")
     }
 
     /// Set the value of a string key to a string. Return an error if the value is not written successfully.
-    pub fn set(&mut self, key: String, value: String) -> Result<()> {
-        let set_cmd = Command::set(key, value);
-        
+    pub fn set(&mut self, key: String, value: String) -> Result<()> {    
         panic!("unimplemented")
     }
 
@@ -62,8 +53,4 @@ impl KvStore {
         panic!("unimplemented")
     }
     
-}
-
-fn sorted_gen_list(path: PathBuf) -> Result<Vec<u64>> {
-    panic!("unimplemented")
 }
