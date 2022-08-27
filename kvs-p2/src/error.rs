@@ -17,7 +17,7 @@ pub enum KVSError {
     /// Key Not Found
     #[fail(display = "Key Not Found")]
     KeyNotFound,
-    /// Serialize/Deserialize Error
+/// Serialize/Deserialize Error
     #[fail(display = "Serde Error")]
     SerdeError(serde_json::Error),
 

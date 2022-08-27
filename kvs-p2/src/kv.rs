@@ -29,12 +29,21 @@ impl Command {
 /// assert_eq!(Some(String::from("value")), store.get(String::from("key")));
 ///
 pub struct KvStore {
+    cur_path: PathBuf,
+    cur_gen: u64,
+    readers: HashMap<String, BufReader<File>>,
+    writer: BufWriter<File>,
+    
 }
 
 impl KvStore {
 
     /// Open the KvStore at a given path. Return the KvStore.
     pub fn open(path: impl Into<PathBuf>) -> Result<KvStore> {
+        let cur_path = path.into();
+        
+        let sorted_gen_list: Vec<u64> = sorted_gen_list(&cur_path)?;
+        
         panic!("unimplemented")
     }
 
@@ -53,4 +62,8 @@ impl KvStore {
         panic!("unimplemented")
     }
     
+}
+
+fn sorted_gen_list(path: &Path) -> Result<Vec<u64>> {
+    panic!("unimplemented")
 }

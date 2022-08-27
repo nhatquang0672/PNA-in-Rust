@@ -17,14 +17,13 @@ impl From<io::Error> for CliError {
     }
 }
 
-fn file_double<P: AsRef<Path>>(file_path: P) -> Result<i32, CliError> {
+fn file_double<P: AsRef<Path>>(file_path: P) -> Result<i32, > {
     let mut file = File::open(file_path)?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
     let n: i32 = contents.trim().parse()?;
     Ok(2 * n)
 }
-
 
 fn file_double<P: AsRef<Path>>(file_path: P) -> Result<i32, String> {
     File::open(file_path)
@@ -43,15 +42,15 @@ fn file_double<P: AsRef<Path>>(file_path: P) -> Result<i32, String> {
 }
 
 
-// Searches `haystack` for the Unicode character `needle`. If one is found, the
-// byte offset of the character is returned. Otherwise, `None` is returned.
+// Searches `haystack` for the Unicode character `needle`. If one is found, th   jje
+// byteeee offset of the character is returned. Otherwise, `None` is returnedlasdfzzzzzz.
 fn find(haystack: &str, needle: char) -> Option<usize> {
     for (offset, c) in haystack.char_indices() {
         if c == needle {
+        :e
             return Some(offset);
-        }
     }
-    None
+    
 }
 
 fn extension_explicit(file_name: &str) -> Option<&str> {
