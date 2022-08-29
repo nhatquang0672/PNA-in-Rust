@@ -33,7 +33,6 @@ pub struct KvStore {
     cur_gen: u64,
     readers: HashMap<u64, BufReader<File>>,
     writer: BufWriter<File>,
-    
 }
 
 impl KvStore {
@@ -41,7 +40,8 @@ impl KvStore {
     /// Open the KvStore at a given path. Return the KvStore.
     pub fn open(path: impl Into<PathBuf>) -> Result<KvStore> {
         let cur_path = path.into();
-        
+        fs::create_dir_all(&cur_path);
+
         let mut readers: HashMap<u64, BufReader<File>> = HashMap::new();
         let sorted_gen_list: Vec<u64> = sorted_gen_list(&cur_path)?;
         for &gen in &sorted_gen_list {
@@ -49,7 +49,7 @@ impl KvStore {
         }
 
         let cur_gen = sorted_gen_list.last().unwrap_or(&0)+1;
-        let writer = new_log_file(&cur_path, cur_gen, &readers);
+        let writer = new_log_file(&cur_path, cur_gen, &mut readers)?;
         Ok(KvStore {
             cur_path,
             cur_gen,
@@ -76,13 +76,30 @@ impl KvStore {
 }
 
 fn sorted_gen_list(path: &Path) -> Result<Vec<u64>> {
-    panic!("unimplemented")
+    let mut gen_list: Vec<u64> = fs::read_dir(path)?
+            .flat_map(|res| -> Result<_> {Ok(res?.path())})
+            .filter(|res| res.is_file() && res.extension() == Some(".log".as_ref()))
+            .flat_map(|e| e.file_name()
+                                .and_then(OsStr::to_str)
+                                .map(|f| f.trim_end_matches(".log"))
+                                .map(str::parse::<u64>))
+            .flatten()
+            .collect()
+            ;
+    gen_list.sort_unstable();
+    Ok(gen_list)
 }
 
 fn log_path(dir: &Path, gen: u64) -> PathBuf {
     dir.join(format!("{}.log", gen))
 }
 
-fn new_log_file(path: &Path, gen: u64, readers: &HashMap<u64, BufReader<File>>) -> BufWriter<File> {
-    panic!("unimplemented")
+fn new_log_file(path: &Path, gen: u64, readers: &mut HashMap<u64, BufReader<File>>) -> Result<BufWriter<File>> {
+    let path = log_path(path, gen);
+    let writer = BufWriter::new(OpenOptions::new()
+                                                                .create(true)
+                                                                .append(true)
+                                                                .open(&path)?);
+    readers.insert(gen, BufReader::new(File::open(&path)?));
+    Ok(writer)
 }
