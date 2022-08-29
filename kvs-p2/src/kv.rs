@@ -31,7 +31,7 @@ impl Command {
 pub struct KvStore {
     cur_path: PathBuf,
     cur_gen: u64,
-    readers: HashMap<String, BufReader<File>>,
+    readers: HashMap<u64, BufReader<File>>,
     writer: BufWriter<File>,
     
 }
@@ -42,9 +42,20 @@ impl KvStore {
     pub fn open(path: impl Into<PathBuf>) -> Result<KvStore> {
         let cur_path = path.into();
         
+        let mut readers: HashMap<u64, BufReader<File>> = HashMap::new();
         let sorted_gen_list: Vec<u64> = sorted_gen_list(&cur_path)?;
-        
-        panic!("unimplemented")
+        for &gen in &sorted_gen_list {
+            readers.insert(gen, BufReader::new(File::open(log_path(&cur_path, gen))?));
+        }
+
+        let cur_gen = sorted_gen_list.last().unwrap_or(&0)+1;
+        let writer = new_log_file(&cur_path, cur_gen, &readers);
+        Ok(KvStore {
+            cur_path,
+            cur_gen,
+            readers,
+            writer,
+        })
     }
 
     /// Set the value of a string key to a string. Return an error if the value is not written successfully.
@@ -65,5 +76,13 @@ impl KvStore {
 }
 
 fn sorted_gen_list(path: &Path) -> Result<Vec<u64>> {
+    panic!("unimplemented")
+}
+
+fn log_path(dir: &Path, gen: u64) -> PathBuf {
+    dir.join(format!("{}.log", gen))
+}
+
+fn new_log_file(path: &Path, gen: u64, readers: &HashMap<u64, BufReader<File>>) -> BufWriter<File> {
     panic!("unimplemented")
 }
