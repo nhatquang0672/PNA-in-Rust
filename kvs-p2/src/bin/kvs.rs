@@ -1,3 +1,5 @@
+use std::env::current_dir;
+
 use clap::{Parser, Subcommand};
 use kvs::{Result, KVSError};
 #[derive(Parser)]
@@ -31,9 +33,21 @@ pub enum Command {
 
 fn main() -> Result<()> {
     let args = Args::parse();
+    let kv = kvs::KvStore::open(current_dir()?);
+
     match args.commands {
-        Command::Get { key: _key } => {Err(KVSError::Unimplemented)},
-        Command::Set { key: _key, value: _value } => Err(KVSError::Unimplemented),
-        Command::Rm { key: _key } => Err(KVSError::Unimplemented),
+        Command::Get { key: _key } => {
+            let res = kv?.get(_key.unwrap());
+            match res {
+                Ok(value) => println!("{}", value.unwrap()),
+                Err(KVSError::KeyNotFound) => println!("Key not found"),
+                _ => unreachable!(),
+            }
+        },
+        Command::Set { key: _key, value: _value } => {
+            kv?.set(_key.unwrap(), _value.unwrap());
+        }, 
+        Command::Rm { key: _key } => {},
     }
+    Ok(())
 }

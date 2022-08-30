@@ -1,4 +1,4 @@
-use std::{collections::{BTreeMap, HashMap}, path::{PathBuf, Path}, io::{BufReader, BufWriter}, fs::{File, OpenOptions, self}, ffi::OsStr};
+use std::{collections::{BTreeMap, HashMap}, path::{PathBuf, Path}, io::{BufReader, BufWriter, Write}, fs::{File, OpenOptions, self}, ffi::OsStr};
 use serde::{Serialize, Deserialize};
 use walkdir::WalkDir;
 use crate::error::{KVSError, Result};
@@ -31,6 +31,7 @@ impl Command {
 pub struct KvStore {
     cur_path: PathBuf,
     cur_gen: u64,
+    index: HashMap<String, String>,
     readers: HashMap<u64, BufReader<File>>,
     writer: BufWriter<File>,
 }
@@ -41,7 +42,8 @@ impl KvStore {
     pub fn open(path: impl Into<PathBuf>) -> Result<KvStore> {
         let cur_path = path.into();
         fs::create_dir_all(&cur_path);
-
+        
+        let index = HashMap::new();
         let mut readers: HashMap<u64, BufReader<File>> = HashMap::new();
         let sorted_gen_list: Vec<u64> = sorted_gen_list(&cur_path)?;
         for &gen in &sorted_gen_list {
@@ -53,6 +55,7 @@ impl KvStore {
         Ok(KvStore {
             cur_path,
             cur_gen,
+            index,
             readers,
             writer,
         })
@@ -60,17 +63,31 @@ impl KvStore {
 
     /// Set the value of a string key to a string. Return an error if the value is not written successfully.
     pub fn set(&mut self, key: String, value: String) -> Result<()> {    
-        panic!("unimplemented")
+        self.index.insert(key.clone(), value.clone());
+        let cmd = Command::set(key, value);
+        serde_json::to_writer(&mut self.writer, &cmd);
+        self.writer.flush()?;
+        Ok(())
     }
 
     /// Get the string value of a string key. If the key does not exist, return None. Return an error if the value is not read successfully.
     pub fn get(&self, key: String) -> Result<Option<String>> {
-        panic!("unimplemented")
+        if self.index.contains_key(&key) {
+            Ok(self.index.get(&key).map(|s| s.to_string()))
+        } else {
+            Err(KVSError::KeyNotFound)
+        }
     }
     
     /// Remove a given key. Return an error if the key does not exist or is not removed successfully.
     pub fn remove(&mut self, key: String) -> Result<()> {
-        panic!("unimplemented")
+        if self.index.contains_key(&key) {
+            self.index.remove(&key);
+            serde_json::to_writer(&mut self.writer, &Command::Remove { key: key })?;
+            Ok(())
+        } else {
+            Err(KVSError::KeyNotFound)
+        }       
     }
     
 }
