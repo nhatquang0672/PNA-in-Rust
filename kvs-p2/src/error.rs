@@ -15,7 +15,7 @@ pub enum KVSError {
     #[fail(display = "IO Error")]
     IOError(#[cause] io::Error),
     /// Key Not Found
-    #[fail(display = "Key Not Found")]
+    #[fail(display = "Key not found")]
     KeyNotFound,
 /// Serialize/Deserialize Error
     #[fail(display = "Serde Error")]

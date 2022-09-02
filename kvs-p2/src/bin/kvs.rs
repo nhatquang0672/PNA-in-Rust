@@ -33,18 +33,18 @@ pub enum Command {
 
 fn main() -> Result<()> {
     let args = Args::parse();
-    let mut kv = kvs::KvStore::open(current_dir()?)?;
-
     match args.commands {
         Command::Get { key: _key } => {
+            let mut kv = kvs::KvStore::open(current_dir()?)?;
             let res = kv.get(_key.unwrap());
             match res {
                 Ok(value) => println!("{}", value.unwrap()),
-                Err(KVSError::KeyNotFound) => println!("Key not found"),
+                Err(KVSError::KeyNotFound) => println!("{}", KVSError::KeyNotFound),
                 _ => unreachable!(),
             }
         },
         Command::Set { key: _key, value: _value } => {
+            let mut kv = kvs::KvStore::open(current_dir()?)?;
             kv.set(_key.unwrap(), _value.unwrap());
         }, 
         Command::Rm { key: _key } => {},
