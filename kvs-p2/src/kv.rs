@@ -96,10 +96,9 @@ impl KvStore {
 }
 
 fn sorted_gen_list(path: &Path) -> Result<Vec<u64>> {
-    println!("Get sorted gen list");
     let mut gen_list: Vec<u64> = fs::read_dir(path)?
             .flat_map(|res| -> Result<_> {Ok(res?.path())})
-            .filter(|res| res.is_file() && res.extension() == Some(".log".as_ref()))
+            .filter(|res| res.is_file() && res.extension() == Some("log".as_ref()))
             .flat_map(|e| e.file_name()
                                 .and_then(OsStr::to_str)
                                 .map(|f| f.trim_end_matches(".log"))
@@ -108,7 +107,6 @@ fn sorted_gen_list(path: &Path) -> Result<Vec<u64>> {
             .collect()
             ;
     gen_list.sort_unstable();
-    println!("{:?}", gen_list);
     Ok(gen_list)
 }
 
@@ -127,12 +125,9 @@ fn new_log_file(path: &Path, gen: u64, readers: &mut HashMap<u64, BufReader<File
 }
 
 fn load(index: &mut HashMap<String, String>, readers: &mut HashMap<u64, BufReader<File>>) -> Result<()> {
-    println!("jump into load function");
     for (gen, gen_reader) in readers.iter_mut() {
         for line in gen_reader.lines() {
             let tmp: Command = serde_json::from_str(line?.as_str())?;
-            println!("abcdee");
-            println!("{:?}", tmp);
             match tmp {
                 Command::Set { key, value } => {
                     index.insert(key, value);
