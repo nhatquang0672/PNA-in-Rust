@@ -1,4 +1,4 @@
-use std::env::current_dir;
+use std::{env::current_dir, process::exit};
 
 use clap::{Parser, Subcommand};
 use kvs::{Result, KVSError};
@@ -35,11 +35,11 @@ fn main() -> Result<()> {
     let args = Args::parse();
     match args.commands {
         Command::Get { key: _key } => {
-            let mut kv = kvs::KvStore::open(current_dir()?)?;
+            let kv = kvs::KvStore::open(current_dir()?)?;
             let res = kv.get(_key.unwrap());
             match res {
-                Ok(value) => println!("{}", value.unwrap()),
-                Err(KVSError::KeyNotFound) => println!("{}", KVSError::KeyNotFound),
+                Ok(value) => print!("{}", value.unwrap()),
+                Err(KVSError::KeyNotFound) => print!("{}", KVSError::KeyNotFound),
                 _ => unreachable!(),
             }
         },
@@ -47,7 +47,18 @@ fn main() -> Result<()> {
             let mut kv = kvs::KvStore::open(current_dir()?)?;
             kv.set(_key.unwrap(), _value.unwrap());
         }, 
-        Command::Rm { key: _key } => {},
+        Command::Rm { key: _key } => {
+            let mut kv = kvs::KvStore::open(current_dir()?)?;
+            let res = kv.remove(_key.unwrap());
+            match res {
+                Ok(()) => {},
+                Err(KVSError::KeyNotFound) => {
+                    print!("{}", KVSError::KeyNotFound);
+                    exit(1);
+                } 
+                _ => unreachable!(),
+            }
+        },
     }
     Ok(())
 }

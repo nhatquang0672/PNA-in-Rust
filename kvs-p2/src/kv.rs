@@ -1,6 +1,5 @@
 use std::{collections::{BTreeMap, HashMap}, path::{PathBuf, Path}, io::{BufReader, BufWriter, Write, BufRead}, fs::{File, OpenOptions, self}, ffi::OsStr, any::type_name};
 use serde::{Serialize, Deserialize};
-use walkdir::WalkDir;
 use crate::error::{KVSError, Result};
 
 
