@@ -38,25 +38,36 @@ fn main() -> Result<()> {
             let kv = kvs::KvStore::open(current_dir()?)?;
             let res = kv.get(_key.unwrap());
             match res {
-                Ok(value) => print!("{}", value.unwrap()),
-                Err(KVSError::KeyNotFound) => print!("{}", KVSError::KeyNotFound),
-                _ => unreachable!(),
+                Ok(val) => {
+                    if let Some(x) = val {print!("{x}")}
+                    else {print!("{}", KVSError::KeyNotFound);}
+                }
+                Err(err) => {
+                    print!("{}", err);
+                    exit(1);
+                }
             }
         },
         Command::Set { key: _key, value: _value } => {
             let mut kv = kvs::KvStore::open(current_dir()?)?;
-            kv.set(_key.unwrap(), _value.unwrap());
+            let res = kv.set(_key.unwrap(), _value.unwrap());
+            match res {
+                Ok(()) => {},
+                Err(err) => {
+                    print!("{}", err);
+                    exit(1);
+                }
+            }
         }, 
         Command::Rm { key: _key } => {
             let mut kv = kvs::KvStore::open(current_dir()?)?;
             let res = kv.remove(_key.unwrap());
             match res {
-                Ok(()) => {},
-                Err(KVSError::KeyNotFound) => {
-                    print!("{}", KVSError::KeyNotFound);
+                Ok(()) => {exit(0)}
+                Err(err) => {
+                    print!("{}", err);
                     exit(1);
-                } 
-                _ => unreachable!(),
+                }
             }
         },
     }
