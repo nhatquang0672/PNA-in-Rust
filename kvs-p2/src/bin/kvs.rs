@@ -35,7 +35,7 @@ fn main() -> Result<()> {
     let args = Args::parse();
     match args.commands {
         Command::Get { key: _key } => {
-            let kv = kvs::KvStore::open(current_dir()?)?;
+            let mut kv = kvs::KvStore::open(current_dir()?)?;
             let res = kv.get(_key.unwrap());
             match res {
                 Ok(val) => {

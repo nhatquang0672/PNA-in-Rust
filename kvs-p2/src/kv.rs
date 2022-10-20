@@ -1,5 +1,7 @@
-use std::{collections::{BTreeMap, HashMap}, path::{PathBuf, Path}, io::{BufReader, BufWriter, Write, BufRead, Read, Seek, SeekFrom}, fs::{File, OpenOptions, self}, ffi::OsStr, any::type_name};
+use std::{collections::{BTreeMap, HashMap}, path::{PathBuf, Path}, io::{BufReader, BufWriter, Write, BufRead, Read, Seek, SeekFrom}, fs::{File, OpenOptions, self}, ffi::OsStr, any::type_name, ops::Range};
+use predicates::ord::le;
 use serde::{Serialize, Deserialize};
+use serde_json::Deserializer;
 use crate::error::{KVSError, Result};
 
 
@@ -30,9 +32,9 @@ impl Command {
 pub struct KvStore {
     cur_path: PathBuf,
     cur_gen: u64,
-    index: HashMap<String, String>,
-    readers: HashMap<u64, BufReader<File>>,
-    writer: BufWriter<File>,
+    index: BTreeMap<String, CommandPos>,
+    readers: HashMap<u64, BufReaderWithPos<File>>,
+    writer: BufWriterWithPos<File>,
 }
 
 impl KvStore {
@@ -42,15 +44,16 @@ impl KvStore {
         let cur_path = path.into();
         fs::create_dir_all(&cur_path);
         
-        let mut index = HashMap::new();
-        let mut readers: HashMap<u64, BufReader<File>> = HashMap::new();
+        let mut index = BTreeMap::new();
+        let mut readers: HashMap<u64, BufReaderWithPos<File>> = HashMap::new();
         let mut sorted_gen_list: Vec<u64> = sorted_gen_list(&cur_path)?;
         for &gen in &sorted_gen_list {
-            readers.insert(gen, BufReader::new(File::open(log_path(&cur_path, gen))?));
+            let mut reader = BufReaderWithPos::new(File::open(log_path(&cur_path, gen))?)?;
+            load(gen, &mut index, &mut reader);
+            readers.insert(gen, reader);
         }
 
-        load(&mut index, &mut readers);
-        let cur_gen = sorted_gen_list.last().unwrap_or(&0)+1;
+        let cur_gen = sorted_gen_list.last().unwrap_or(&0)+0;
         let writer = new_log_file(&cur_path, cur_gen, &mut readers)?;
         Ok(KvStore {
             cur_path,
@@ -62,19 +65,26 @@ impl KvStore {
     }
 
     /// Set the value of a string key to a string. Return an error if the value is not written successfully.
-    pub fn set(&mut self, key: String, value: String) -> Result<()> {    
-        self.index.insert(key.clone(), value.clone());
-        let cmd = Command::set(key, value);
+    pub fn set(&mut self, key: String, value: String) -> Result<()> {   
+        let pos = self.writer.pos; 
+        let cmd = Command::set(key.to_owned(), value.to_owned());
         serde_json::to_writer(&mut self.writer, &cmd);
-        self.writer.write_all(b"\n")?;
         self.writer.flush()?;
+        self.index.insert(key, (self.cur_gen, pos..self.writer.pos).into());
         Ok(())
     }
 
     /// Get the string value of a string key. If the key does not exist, return None. Return an error if the value is not read successfully.
-    pub fn get(&self, key: String) -> Result<Option<String>> {
-        if self.index.contains_key(&key) {
-            Ok(self.index.get(&key).map(|s| s.to_string()))
+    pub fn get(&mut self, key: String) -> Result<Option<String>> {
+        if let Some(cmd_pos) = self.index.get(&key) {
+            let reader = self.readers.get_mut(&cmd_pos.gen).expect("Can not find log reader");
+            reader.seek(SeekFrom::Start(cmd_pos.pos));
+            let cmd_reader = reader.take(cmd_pos.len);
+            if let Command::Set { key, value } = serde_json::from_reader(cmd_reader)? {
+                Ok(Some(value))
+            } else {
+                Err(KVSError::InvalidCommand)
+            }
         } else {
             Ok(None)
         }
@@ -85,7 +95,6 @@ impl KvStore {
         if self.index.contains_key(&key) {
             self.index.remove(&key);
             serde_json::to_writer(&mut self.writer, &Command::remove(key));
-            self.writer.write_all(b"\n")?;
             self.writer.flush()?;
             Ok(())
         } else {
@@ -114,29 +123,113 @@ fn log_path(dir: &Path, gen: u64) -> PathBuf {
     dir.join(format!("{}.log", gen))
 }
 
-fn new_log_file(path: &Path, gen: u64, readers: &mut HashMap<u64, BufReader<File>>) -> Result<BufWriter<File>> {
+fn new_log_file(path: &Path, gen: u64, readers: &mut HashMap<u64, BufReaderWithPos<File>>) -> Result<BufWriterWithPos<File>> {
     let path = log_path(path, gen);
-    let writer = BufWriter::new(OpenOptions::new()
+    let writer = BufWriterWithPos::new(OpenOptions::new()
                                                                 .create(true)
                                                                 .append(true)
-                                                                .open(&path)?);
-    readers.insert(gen, BufReader::new(File::open(&path)?));
+                                                                .open(&path)?)?;
+    readers.insert(gen, BufReaderWithPos::new(File::open(&path)?)?);
     Ok(writer)
 }
 
-fn load(index: &mut HashMap<String, String>, readers: &mut HashMap<u64, BufReader<File>>) -> Result<()> {
-    for (gen, gen_reader) in readers.iter_mut() {
-        for line in gen_reader.lines() {
-            let tmp: Command = serde_json::from_str(line?.as_str())?;
-            match tmp {
-                Command::Set { key, value } => {
-                    index.insert(key, value);
-                }                   
-                Command::Remove { key } => {
-                    index.remove(&key);
-                }
-            }
+// fn load_v1(index: &mut BTreeMap<String, CommandPos>, readers: &mut HashMap<u64, BufReaderWithPos<File>>) -> Result<()> {
+//     for (gen, gen_reader) in readers.iter_mut() {
+//         for line in gen_reader.lines() {
+//             let tmp: Command = serde_json::from_str(line?.as_str())?;
+//             match tmp {
+//                 Command::Set { key, value } => {
+//                     index.insert(key, value);
+//                 }                   
+//                 Command::Remove { key } => {
+//                     index.remove(&key);
+//                 }
+//             }
+//         }
+//     }
+//     Ok(())
+// }
+
+fn load(gen: u64, index: &mut BTreeMap<String, CommandPos>, reader: &mut BufReaderWithPos<File>) -> Result<()> {
+    let mut pos = reader.seek(SeekFrom::Start(0))?;
+    let mut stream = Deserializer::from_reader(reader).into_iter::<Command>();
+    while let Some(cmd) = stream.next() {
+        let new_pos = stream.byte_offset() as u64;
+        match cmd? {
+            Command::Set { key, ..} => {
+                index.insert(key, (gen, pos..new_pos).into());
+            },
+            Command::Remove { key } => {
+                index.remove(&key);
+            },
         }
+        pos = new_pos;
     }
     Ok(())
+}
+
+struct CommandPos {
+    gen: u64,
+    pos: u64,
+    len: u64,
+}
+
+impl From<(u64, Range<u64>)> for CommandPos {
+    fn from((gen, range): (u64, Range<u64>)) -> Self {
+        CommandPos { gen, pos: range.start, len: range.end-range.start}
+    }
+}
+struct BufReaderWithPos <R: Read + Seek> {
+    reader: BufReader<R>,
+    pos: u64,
+} 
+
+impl <R: Read+Seek> BufReaderWithPos<R> {
+    fn new(mut inner: R) -> Result<Self> {
+        let pos = inner.seek(SeekFrom::Current(0))?;
+        Ok(BufReaderWithPos { reader: BufReader::new(inner) , pos})
+    }
+}
+impl <R: Read+Seek> Read for BufReaderWithPos<R> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        let len = self.reader.read(buf)?;
+        self.pos += len as u64;
+        Ok(len)
+    }
+}
+
+impl <R: Read+Seek> Seek for BufReaderWithPos<R> {
+    fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
+        self.pos = self.reader.seek(pos)?;
+        Ok(self.pos)
+    }
+}
+struct BufWriterWithPos<W: Write + Seek> {
+    writer: BufWriter<W>,
+    pos: u64
+} 
+
+impl <W: Write+Seek> BufWriterWithPos<W> {
+    fn new(mut inner: W) -> Result<Self> {
+        let pos = inner.seek(SeekFrom::Current(0))?;
+        Ok(BufWriterWithPos { writer: BufWriter::new(inner), pos})
+    }
+}
+
+impl <W: Write+Seek> Write for BufWriterWithPos<W> {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        let len = self.writer.write(buf)?;
+        self.pos += len as u64;
+        Ok(len)
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.writer.flush()
+    }
+}
+
+impl <W: Write+Seek> Seek for BufWriterWithPos<W> {
+    fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
+        self.pos = self.writer.seek(pos)?;
+        Ok(self.pos)
+    }
 }
