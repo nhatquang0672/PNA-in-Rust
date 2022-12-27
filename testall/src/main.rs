@@ -17,13 +17,13 @@ impl From<io::Error> for CliError {
     }
 }
 
-fn file_double<P: AsRef<Path>>(file_path: P) -> Result<i32, > {
-    let mut file = File::open(file_path)?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-    let n: i32 = contents.trim().parse()?;
-    Ok(2 * n)
-}
+// fn file_double<P: AsRef<Path>>(file_path: P) -> Result<i32, > {
+//     let mut file = File::open(file_path)?;
+//     let mut contents = String::new();
+//     file.read_to_string(&mut contents)?;
+//     let n: i32 = contents.trim().parse()?;
+//     Ok(2 * n)
+// }
 
 fn file_double<P: AsRef<Path>>(file_path: P) -> Result<i32, String> {
     File::open(file_path)
